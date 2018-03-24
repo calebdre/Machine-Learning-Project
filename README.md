@@ -19,7 +19,11 @@ Submission should be a version of each dataset with the missing information fill
 Find the data in `/part2/data`.
 
 ## Useful Links
+https://github.com/grst/nbimporter
+
 #### Choosing an algorithm
 - Brief explanation and comparison of regression, classification, clustering algorithms: [elitedatascience](https://elitedatascience.com/machine-learning-algorithms)
+- [scikit-learn cheatsheet](http://scikit-learn.org/stable/tutorial/machine_learning_map/index.html)
 #### Optimizing Algorithms
 - Explanation and tutorial on using regularization techniques to improve regression models: [analyticsvidhya](https://www.analyticsvidhya.com/blog/2016/01/complete-tutorial-ridge-lasso-regression-python/)
+- Explanation of bias/variance tradeoff [scott fortmann.com](http://scott.fortmann-roe.com/docs/BiasVariance.html)
