@@ -1,4 +1,5 @@
 matplotlib
 pandas
-jupyter
+jupyterlab
 numpy
+npimporter
