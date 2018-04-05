@@ -2,4 +2,4 @@ matplotlib
 pandas
 jupyterlab
 numpy
-npimporter
+nbimporter
