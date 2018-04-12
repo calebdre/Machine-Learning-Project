@@ -3,7 +3,6 @@ import numpy as np
 import pandas as pd
 from multiprocessing import Pool
 
-
 def calc(data):
     col_df, labels = data
     min_cost = 2
