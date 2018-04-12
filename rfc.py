@@ -2,12 +2,14 @@ from math import sqrt, floor
 import numpy as np
 import pandas as pd
 from multiprocessing import Pool
+from IPython.core.debugger import set_trace
 
 def calc(data):
     col_df, labels = data
     min_cost = 2
     min_cost_index = -1
     total_rows = col_df.shape[0]
+    
     for index, row in col_df.iteritems():
         split1 = col_df[row > col_df]
         split2 = col_df[row < col_df]
@@ -25,7 +27,6 @@ def calc(data):
         if total_cost < min_cost:
             min_cost = total_cost
             min_cost_index = index
-
     return (min_cost, min_cost_index, col_df.name)
 
 def calc_best_gini_split(df, labels):
@@ -48,32 +49,54 @@ class RandomForest:
         self.trees = []
         self.verbose = verbose
     
-    def train(self, origin_df, labels, num_trees=10, num_features=None, num_sample_rows=None , max_tree_depth=20, min_split_samples=5):
+    def train(self, origin_df, labels, num_trees=10, num_features=None, num_sample_rows=None , max_tree_depth=20, min_split_samples=5, bias_class=None, bias_amount=0):     
         if num_features is None or num_features < 1:
             num_features = floor(sqrt(origin_df.shape[1]))
             
-        if num_sample_rows is None or num_sample_rows < 1:
+        if num_sample_rows != None or num_sample_rows < 1:
             num_sample_rows = floor(origin_df.shape[0] / 4)
-            
-        for i in range(num_trees):
-            features = np.random.choice(origin_df.columns, size=num_features, replace=False)
-            rows = np.random.choice(origin_df.shape[0], size=num_sample_rows, replace=False)
+        
+        tree_selections = []
+        if bias_class != None and bias_amount > 0:
+            # create special trees for the classes that aren't in bias
+            # designate how many trees will be allocated = n
+            num_special_trees = floor(bias_amount * num_trees)
+            # select subset of rows without bias class
+            special_tree_labels = labels[labels != bias_class].dropna()
+            special_tree_rows = origin_df.iloc[special_tree_labels.index]
+            # train on those
+            self.p("************", "Bias class found - removing {} class and building {} of {} trees".format(bias_class, num_special_trees, num_trees),"************")
+            tree_selections += self.train(special_tree_rows, special_tree_labels, num_special_trees, num_features, num_special_trees, max_tree_depth, min_split_samples)
+            num_trees -= num_special_trees
+            self.p("***********", "Finished creating bias trees. Creating {} more trees from all the data".format(num_trees), "************")
 
+        for i in range(num_trees):
+            total_labels = labels["label"].unique().size
+            rows = np.random.choice(origin_df.shape[0], size=num_sample_rows, replace=False)
+            
+            while labels.iloc[rows]["label"].unique().size != total_labels:
+                rows = np.random.choice(origin_df.shape[0], size=num_sample_rows, replace=False)
+                    
+            features = np.random.choice(origin_df.columns, size=num_features, replace=False)
+            
             df = origin_df[features]
             df = df.iloc[rows]
+            
+            tree_selections.append(df)
             
             self.p("*** Creating tree #{} ***".format(i+1), True)
             self.trees.append(DecisionTree(self.verbose).train(df, labels, max_tree_depth, min_split_samples))
             
-        return self
+        return tree_selections
     
     def predict(self, row):
         if not isinstance(row, pd.Series):
             raise Exception("`row` must be an instance of Pandas.Series")
         
+        
         predictions = [tree.predict(row) for tree in self.trees]
         return np.bincount(predictions).argmax()
-    
+            
     def p(self, *args, important=False):
         if self.verbose:
             for arg in args:
@@ -124,7 +147,7 @@ class DecisionTree:
         
         self.root = train_recurse(origin_df, labels, 1)
         return self
-    
+
     def p(self, *args, important=False):
         if self.verbose:
             for arg in args:
@@ -137,7 +160,7 @@ class DecisionTree:
             raise Exception("Must call `train` before using `predict`")
         
         node = self.root
-        while type(node) != np.int64:
+        while not np.isscalar(node):
             node = node.traverse(row)
         
         return node

@@ -4,3 +4,4 @@ jupyterlab
 numpy
 nbimporter
 sklearn
+imbalanced-learn
