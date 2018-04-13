@@ -19,7 +19,7 @@ def merge(df, labels):
     return labels.merge(df, left_index=True,right_index=True)
 
 class Experiment:
-    def __init__(self, df, labels, model_class, model_config_names, model_config_init_values, k_folds=10):        
+    def __init__(self, df, labels, model_class, model_config_names, model_config_init_values, k_folds=10, verbose=False):        
         self.data = df
         self.labels = labels
         self.label_values = labels["label"].unique()
@@ -30,6 +30,7 @@ class Experiment:
         self.init_experiments(model_config_names, model_config_init_values)
         
         self.k_folds = k_folds
+        self.verbose = verbose
     
     def tweak(self, parameter, new_value):
         self.experiments.loc[len(self.experiments) - 1][parameter] = new_value
@@ -62,7 +63,7 @@ class Experiment:
             predictions = test.apply(lambda row: model.predict(row), axis=1)
             performance = self.measure_performance(predictions, merge(test, labels), self.label_values)
             
-            self.record_trial(predictions, performance, train, test, i+1 == len(folds))
+            self.record_trial(model, predictions, performance, train, test, i+1 == len(folds))
         
         self.trial_num += 1
         self.experiments.loc[len(self.experiments) - 1]["trial_num"] = self.trial_num
@@ -106,9 +107,11 @@ class Experiment:
             trial_num = self.experiments["trial_num"].max()-1
         
         return self.experiment_data[trial_num]
+
+    
     
     def model(self):
-        return self.model_class(verbose=False)
+        return self.model_class(verbose=self.verbose)
     
     def init_experiments(self, config_names, config_values):
         derived_cols = self.performance_measures() + ["trial_num"]
@@ -121,12 +124,12 @@ class Experiment:
         self.experiments[config_names] = self.experiments[config_names].fillna(-1)
         self.experiment_data = []
     
-    def record_trial(self, predictions, perf_results, train, test, final=False):
+    def record_trial(self, model, predictions, perf_results, train, test, final=False):
         for key in perf_results:
             self.experiments.loc[len(self.experiments) - 1][key] = perf_results[key]
 
         self.experiments.loc[len(self.experiments)] = self.experiments.loc[len(self.experiments) - 1]
-        self.experiment_data.append((train, test, predictions))
+        self.experiment_data.append((model, train, test, predictions))
             
     def performance_measures(self):
         return ["log_loss", "class_accuracy", "precision", "recall", "f1-score", "support"]

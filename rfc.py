@@ -9,7 +9,6 @@ def calc(data):
     min_cost = 2
     min_cost_index = -1
     total_rows = col_df.shape[0]
-    
     for index, row in col_df.iteritems():
         split1 = col_df[row > col_df]
         split2 = col_df[row < col_df]
@@ -33,7 +32,7 @@ def calc_best_gini_split(df, labels):
     total_rows = df.shape[0]
     
     columns = [(df.iloc[:, i], labels) for i in range(df.shape[1])]
-    with Pool(20) as pool:
+    with Pool(4) as pool:
         result = pool.map_async(calc, columns)
         mins = np.array(result.get())
         
@@ -53,7 +52,7 @@ class RandomForest:
         if num_features is None or num_features < 1:
             num_features = floor(sqrt(origin_df.shape[1]))
             
-        if num_sample_rows != None or num_sample_rows < 1:
+        if num_sample_rows == None or num_sample_rows < 1:
             num_sample_rows = floor(origin_df.shape[0] / 4)
         
         tree_selections = []
@@ -84,7 +83,7 @@ class RandomForest:
             
             tree_selections.append(df)
             
-            self.p("*** Creating tree #{} ***".format(i+1), True)
+            self.p("*** Creating tree #{} ***".format(i+1))
             self.trees.append(DecisionTree(self.verbose).train(df, labels, max_tree_depth, min_split_samples))
             
         return tree_selections
@@ -97,7 +96,7 @@ class RandomForest:
         predictions = [tree.predict(row) for tree in self.trees]
         return np.bincount(predictions).argmax()
             
-    def p(self, *args, important=False):
+    def p(self, *args):
         if self.verbose:
             for arg in args:
                 print(" ")
