@@ -32,7 +32,7 @@ def calc_best_gini_split(df, labels):
     total_rows = df.shape[0]
     
     columns = [(df.iloc[:, i], labels) for i in range(df.shape[1])]
-    with Pool(4) as pool:
+    with Pool(20) as pool:
         result = pool.map_async(calc, columns)
         mins = np.array(result.get())
         

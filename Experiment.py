@@ -135,15 +135,16 @@ class Experiment:
         return ["log_loss", "class_accuracy", "precision", "recall", "f1-score", "support"]
     
     def split_k_folds(self):
-        splitter = int(np.ceil(self.data.shape[0] / self.k_folds))
+        splitter = int(np.floor(self.data.shape[0] / self.k_folds))
         df = shuffle(merge(self.data, self.labels))
         labels = df.pop("label")
 
         folds = []
-        for i in range(1, self.k_folds+1):
-            train = df.iloc[(i-1) * splitter: i * splitter]
-            test = df.iloc[np.r_[0:(i-1) * splitter, i*splitter: df.shape[0]]]
-            folds.append((train, test))
+        for i in range(1, self.k_folds-2):
+            if df.shape[0] > splitter * i:
+                train = df.iloc[(i-1) * splitter: i * splitter]
+                test = df.iloc[np.r_[0:(i-1) * splitter, i*splitter: df.shape[0]]]
+                folds.append((train, test))
 
         return folds, labels
     
